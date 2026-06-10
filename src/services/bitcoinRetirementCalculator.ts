@@ -51,16 +51,14 @@ const buildRetirementPrediction = (
   for (const dataSetItem of bitcoinPriceHistory) {
     const pendingSavingsFiat = calculateFiatWillNeedOverLife(dataSetItem.age, bitcoinPriceHistory);
 
-    // FIX: buy BTC first, then compute fiat value — so both reflect the same BTC balance
+    // Buy BTC first, then compute fiat value — so both reflect the same BTC balance
     indexedAnnualBuyInFiat = indexedAnnualBuyInFiat * inflationFactor;
     const bitcoinToBuy = indexedAnnualBuyInFiat / dataSetItem.bitcoinPriceIndexed;
     accumulatedSavingsBitcoin += bitcoinToBuy;
-
     accumulatedSavingsFiat = accumulatedSavingsBitcoin * dataSetItem.bitcoinPriceIndexed;
 
     if (pendingSavingsFiat <= accumulatedSavingsFiat) {
       calculationResult.canRetire = true;
-
       const yearsAfterRetirement = input.lifeExpectancy - dataSetItem.age;
       calculationResult.annualRetirementBudget = accumulatedSavingsFiat / yearsAfterRetirement;
       calculationResult.annualRetirementBudgetAtRetirementAge =
@@ -98,8 +96,6 @@ const buildRetirementPrediction = (
   );
 
   for (const dataSetItem of posRetirementPriceHistory) {
-    // Subtract this year's budget first (retirement year included),
-    // then push — so savingsFiat shows the balance AFTER living expenses for that year.
     remainingSavingsFiat -= dataSetItem.desiredAnnualBudgetIndexed;
 
     calculationResult.dataSet.push({
