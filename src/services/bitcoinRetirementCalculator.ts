@@ -50,10 +50,17 @@ const buildRetirementPrediction = (
   // iterate to find retirement values (age, savings, etc)
   for (const dataSetItem of bitcoinPriceHistory) {
     const pendingSavingsFiat = calculateFiatWillNeedOverLife(dataSetItem.age, bitcoinPriceHistory);
+
+    // FIX: buy BTC first, then compute fiat value — so both reflect the same BTC balance
+    indexedAnnualBuyInFiat = indexedAnnualBuyInFiat * inflationFactor;
+    const bitcoinToBuy = indexedAnnualBuyInFiat / dataSetItem.bitcoinPriceIndexed;
+    accumulatedSavingsBitcoin += bitcoinToBuy;
+
     accumulatedSavingsFiat = accumulatedSavingsBitcoin * dataSetItem.bitcoinPriceIndexed;
 
     if (pendingSavingsFiat <= accumulatedSavingsFiat) {
       calculationResult.canRetire = true;
+
       const yearsAfterRetirement = input.lifeExpectancy - dataSetItem.age;
       calculationResult.annualRetirementBudget = accumulatedSavingsFiat / yearsAfterRetirement;
       calculationResult.annualRetirementBudgetAtRetirementAge =
@@ -64,11 +71,6 @@ const buildRetirementPrediction = (
       calculationResult.savingsFiat = accumulatedSavingsFiat;
       break;
     }
-    // increase bitcoin price as composite interest based on annual price growth
-    indexedAnnualBuyInFiat = indexedAnnualBuyInFiat * inflationFactor;
-    // accumulate amount of btc you hodl
-    const bitcoinToBuy = indexedAnnualBuyInFiat / dataSetItem.bitcoinPriceIndexed;
-    accumulatedSavingsBitcoin += bitcoinToBuy;
 
     // add current year to dataset
     calculationResult.dataSet.push({
@@ -83,17 +85,23 @@ const buildRetirementPrediction = (
     });
   }
 
-  // didn't find a retirement age skip pos retirement calculations
+  // didn't find a retirement age, skip post-retirement calculations
   if (!calculationResult.canRetire) {
     return calculationResult;
   }
-  // pos-retirement calculations
+
+  // post-retirement calculations
   let remainingSavingsFiat = calculationResult.savingsFiat;
+
   const posRetirementPriceHistory = bitcoinPriceHistory.filter(
     (x) => x.age >= calculationResult.retirementAge,
   );
+
   for (const dataSetItem of posRetirementPriceHistory) {
+    // Subtract this year's budget first (retirement year included),
+    // then push — so savingsFiat shows the balance AFTER living expenses for that year.
     remainingSavingsFiat -= dataSetItem.desiredAnnualBudgetIndexed;
+
     calculationResult.dataSet.push({
       key: dataSetItem.year,
       year: dataSetItem.year,
@@ -106,6 +114,7 @@ const buildRetirementPrediction = (
       annualRetirementBudget: dataSetItem.desiredAnnualBudgetIndexed,
     });
   }
+
   return calculationResult;
 };
 

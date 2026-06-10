@@ -109,7 +109,7 @@ const buildRetirementPrediction = (
       year: dataSetItem.year,
       age: dataSetItem.age,
       savingsBitcoin: remainingSavingsBitcoin,
-      savingsFiat: bitcoinToSell * dataSetItem.bitcoinPriceIndexed,
+      savingsFiat: remainingSavingsBitcoin * dataSetItem.bitcoinPriceIndexed, // FIX: remaining portfolio value, not the annual spend
       bitcoinFlow: -bitcoinToSell,
       bitcoinPrice: dataSetItem.bitcoinPriceIndexed,
       annualRetirementBudget: dataSetItem.desiredAnnualBudgetIndexed,
